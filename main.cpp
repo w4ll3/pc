@@ -9,7 +9,8 @@
 
 using namespace std;
 
-int threads, size;
+int threads;
+string line;
 ifstream train_file;
 ifstream test_file;
 vector<string> train_base;
@@ -25,9 +26,6 @@ double elapsed = 0;
 
 void *classify(void *arg) {
 	int id = (int) *((int*) arg);
-	string line;
-
-	while(getline(train_file, line)) train_base.push_back(line);
 	int i = 0;
 	while(getline(test_file, line)) {
 
@@ -58,36 +56,18 @@ void *classify(void *arg) {
 				best = train_ss.str().substr(train_ss.str().find_last_of(",") + 1);
 			 }
 		}
-		i++;
 	}
-	cout << i << endl;
 }
 
 int main(int argc, char **argv) {
 	TIME()
-	int test_size, train_size;
 	threads = atoi(argv[3]);
 	pthread_t threads_vect[threads];
 
 	train_file.open(argv[2], ifstream::in);
 	test_file.open(argv[1], ifstream::in);
 
-	string size_train = regex_replace(
-		string(argv[2]),
-		regex("[^0-9]*([0-9]+).*"),
-		string("$1")
-	);
-
-	string size_test = regex_replace(
-		string(argv[1]),
-		regex("[^0-9]*([0-9]+).*"),
-		string("$1")
-	);
-
-	istringstream testsize_ss(size_train);
-	istringstream trainsize_ss(size_train);
-	trainsize_ss >> size;
-
+	while(getline(train_file, line)) train_base.push_back(line);
 	int ids[threads];
 	for (int i = 0; i < threads; i++) {
 		ids[i] = i;
@@ -96,6 +76,7 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < threads; i++)
 		pthread_join(threads_vect[i], NULL);
+
 	ENDTIME()
 	return 0;
 }
