@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
 
 	test_file.open(argv[1], ifstream::in);
 	train_file.open(argv[2], ifstream::in);
+	string line;
 	while(getline(test_file, line)) test_base.push_back(line);
 	while(getline(train_file, line)) train_base.push_back(line);
 
