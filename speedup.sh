@@ -18,7 +18,7 @@ function build {
 		make PAPI="-DPAPI -lpapi" SIZE=$SSIZE $PROG
 		printf "Using PAPI\n"
 	else
-		make SIZE=$SSIZE $PROG
+		make $PROG
 	fi
 }
 
@@ -26,6 +26,7 @@ while [[ $# -ge 1 ]]
 do
 
 KEY="$1"
+USEPAPI=0
 
 case $KEY in
 	-p|--program )
@@ -81,7 +82,7 @@ case $KEY in
 		esac
 	;;
 	--with-papi )
-	USEPAPI=1
+	USEPAPI=0
 	;;
 	-t|--threads )
 	THREADS=$(( $2 + 0 ))
@@ -135,17 +136,17 @@ while [[ "$THREADS" -ge "2" ]]; do
 			ID=$(( 14 - j ))
 			if [ "$j" -eq "1" ]; then
 				if [[ $USEPAPI -ne 1 ]]; then
-					MIN=$(./obj/$PROG $THREADS $i $j)
+					MIN=$(./obj/$PROG test_59.data train_59.data $THREADS $i $j)
 					MIN=$(( MIN + 0 ))
 					MAX=$(( MIN + 0 ))
 				else
-					MIN=($(./obj/$PROG $THREADS $i $j))
+					MIN=($(./obj/$PROG test_59.data train_59.data $THREADS $i $j))
 					MIN=$(( ${MIN[-1]} + 0 ))
 					MAX=$(( ${MIN[-1]} + 0 ))
 				fi
 			else
 				if [[ $USEPAPI -ne 1 ]]; then
-					TIMES[ID]=$(./obj/$PROG $THREADS $i $j)
+					TIMES[ID]=$(./obj/$PROG test_59.data train_59.data $THREADS $i $j)
 					TIMES[ID]=$(( ${TIMES[$ID]} + 0 ))
 					if [ "${TIMES[$ID]}" -le "$MIN" ]; then
 						MIN=$ID
@@ -154,7 +155,7 @@ while [[ "$THREADS" -ge "2" ]]; do
 						MAX=$ID
 					fi
 				else
-					AUX=$(./obj/$PROG $THREADS $i $j)
+					AUX=$(./obj/$PROG test_59.data train_59.data $THREADS $i $j)
 					ALL=( $AUX )
 					PAPI_L1_TCM[j]=$(( ${ALL[1]} + 0 ))
 					PAPI_L2_TCM[j]=$(( ${ALL[2]} + 0 ))
@@ -239,6 +240,6 @@ while [[ "$THREADS" -ge "2" ]]; do
 	THREADS=$(( $THREADS / 2 ))
 done
 echo -e "\x1B[0m\n"
-printf "1\t1\t1\n0\t0\t0\n" >> results/$PROG.dat
+printf "1\t1\t1\n0\t0\t0\n" > results/$PROG.dat
 
 gnuplot -c plot.gp $PROG $SIZE
