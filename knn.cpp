@@ -10,10 +10,9 @@
 using namespace std;
 
 int threads;
-string line, train_name, test_name;
 ifstream train_file;
-vector<string> train_base;
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+ifstream test_file;
+vector<string> train_base, test_base;
 
 double elapsed = 0;
 #define TIME()	struct timespec start, finish; \
@@ -26,21 +25,15 @@ double elapsed = 0;
 
 void *classify(void *arg) {
 	int id = *((int *) arg);
-	int leave = 1;
+	int split = test_base.size() / threads;
+	int begin = split * id;
+	int end = begin + split;
 
-	string comp;
-	ifstream test_file;
-	test_file.open(test_name, ifstream::in);
-	for (int i = 0; i < id; i++) {
-		getline(test_file, comp);
-		if(test_file.eof()) leave = 0;
-	}
-
-	while(leave) {
+	for (int i = begin; i < end; i++) {
 		float min = 1, distance = 0;
-		istringstream test_ss(comp);
-		vector<float> test;
+		istringstream test_ss(test_base[i]);
 
+		vector<float> test;
 		for (float v = 0; test_ss >> v; ) {
 			test.push_back(v);
 			test_ss.ignore();
@@ -51,41 +44,35 @@ void *classify(void *arg) {
 			distance = 0;
 
 			for (float v = 0, j = 0; train_ss >> v; j++) {
-				distance += sqrt(pow(test[j] - v, 2));
+				distance += pow(test[j] - v, 2);
 				train_ss.ignore();
 			}
 
-			if (distance < min)
-				min = distance;
-		}
-		for (int i = 0; i < threads; i++) {
-			getline(test_file, comp);
-			if(test_file.eof()) leave = 0;
+			if (sqrt(distance) < min)
+				min = sqrt(distance);
 		}
 	}
 }
 
 int main(int argc, char **argv) {
-	TIME()
-	threads = atoi(argv[3]);
 	pthread_t threads_vect[threads];
-	pthread_mutex_init(&lock, NULL);
 
-	train_name = argv[2];
-	test_name = argv[1];
+	threads = atoi(argv[3]);
 
-	train_file.open(train_name, ifstream::in);
+	test_file.open(argv[1], ifstream::in);
+	train_file.open(argv[2], ifstream::in);
+	while(getline(test_file, line)) test_base.push_back(line);
 	while(getline(train_file, line)) train_base.push_back(line);
 
 	int ids[threads];
+	TIME()
 	for (int i = 0; i < threads; i++) {
 		ids[i] = i;
 		pthread_create(&threads_vect[i], NULL, classify, ids + i);
 	}
+	ENDTIME()
 
 	for (int i = 0; i < threads; i++)
 		pthread_join(threads_vect[i], NULL);
-
-	ENDTIME()
 	return 0;
 }
