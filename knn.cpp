@@ -22,6 +22,33 @@ double elapsed = 0;
 					elapsed = (finish.tv_sec - start.tv_sec); \
 					elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0; \
 					printf("%.f", elapsed * 1000000000);
+					
+void classify_seq() {
+	for (int i = 0; i < test_base.size(); i++) {
+		float min = 1, distance = 0;
+		istringstream test_ss(test_base[i]);
+
+		vector<float> test;
+		for (float v = 0; test_ss >> v; ) {
+			test.push_back(v);
+			test_ss.ignore();
+		}
+
+		for (auto const& it : train_base) {
+			istringstream train_ss(it);
+			distance = 0;
+
+			for (float v = 0, j = 0; train_ss >> v; j++) {
+				distance += pow(test[j] - v, 2);
+				train_ss.ignore();
+			}
+
+			if (sqrt(distance) < min)
+				min = sqrt(distance);
+		}
+	}
+}
+
 
 void *classify(void *arg) {
 	int id = *((int *) arg);
@@ -67,13 +94,20 @@ int main(int argc, char **argv) {
 
 	int ids[threads];
 	TIME()
-	for (int i = 0; i < threads; i++) {
-		ids[i] = i;
-		pthread_create(&threads_vect[i], NULL, classify, ids + i);
+	switch(atoi(argv[4])) {
+		case 0: {
+			classify_seq();
+		} break;
+
+		default: {
+			for (int i = 0; i < threads; i++) {
+				ids[i] = i;
+				pthread_create(&threads_vect[i], NULL, classify, ids + i);
+			}
+			for (int i = 0; i < threads; i++)
+				pthread_join(threads_vect[i], NULL);
+		} break;
 	}
 	ENDTIME()
-
-	for (int i = 0; i < threads; i++)
-		pthread_join(threads_vect[i], NULL);
 	return 0;
 }

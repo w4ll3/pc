@@ -108,7 +108,7 @@ NOTSEQ=1
 rm -rf results/$PROG.*
 
 while [[ "$THREADS" -ge "2" ]]; do
-	for i in $(seq 0 2);	do
+	for i in $(seq 0 1);	do
 		if [[ "$NOTSEQ" -eq "0" ]]; then
 			if [[ "$i" -eq "0" ]]; then
 				echo -e "\n\x1B[35m$THREADS threads:"
